@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SageIMAT</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        textarea {
+            width: 100%;
+            height: 200px;
+            font-family: monospace;
+            font-size: 14px;
+            border: 1px solid #ccc;
+            padding: 10px;
+            resize: vertical;
+        }
+        #output-container {
+            margin-top: 20px;
+        }
+        #output-image {
+            width: 100%;
+            max-width: 1024px;
+            height: 512px;
+            background: #ffffff;
+            border: 1px solid #ccc;
+        }
+    </style>
+</head>
+<body>
+    <h1>SageIMAT</h1>
+    <h3>Una aplicación web basada en ModernGL y Flask</h3>
+    <textarea id="code-input" placeholder="Introduce tu código aquí..."></textarea>
+    <div id="output-container">
+        <img id="output-image" src="" alt="Generated Image"/>
+    </div>
+
+    <script>
+        function updateImage() {
+            const code = document.getElementById('code-input').value.trim();
+
+            fetch(`/render`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ code: code })
+            })
+            .then(response => {
+                if (response.ok) return response.blob();
+                throw new Error('Error generating image');
+            })
+            .then(blob => {
+                const url = URL.createObjectURL(blob);
+                document.getElementById('output-image').src = url;
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                document.getElementById('output-image').src = '';
+            });
+        }
+
+        document.getElementById('code-input').addEventListener('input', updateImage);
+    </script>
+</body>
+</html>
