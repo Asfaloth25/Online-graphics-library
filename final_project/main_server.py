@@ -11,21 +11,18 @@ last_user_code = ''
 def render_image(code):
     global last_user_code
     # Run the provided code safely
-    try:
+    # try:
 
-        print('GOT HERE 1')
-        image = run_restricted(code)
-        
-        img_io = io.BytesIO()
-        image.save(img_io, 'PNG')
-        img_io.seek(0)
-        last_user_code = code
-        return img_io
+    print('GOT HERE 1')
+    image = run_restricted(code)
     
-    except Exception as e:
-        print("Error in user code execution:", e)
-        return
-        return run_restricted(last_user_code, TEST_MODE=True)
+    img_io = io.BytesIO()
+    image.save(img_io, 'PNG')
+    img_io.seek(0)
+    return img_io
+    
+    # except Exception as e:
+    #     print("Error in user code execution:", e)
 
 @app.route('/')
 def index():
@@ -130,22 +127,14 @@ def render():
     data = request.json
     code = data.get('code', '')
 
-    try:
+    img_io = None
 
-        def thread_func(code:str, l:list):
-            l.append(render_image(code))
+    img_io = render_image(code)
 
-        l = []
-        t = Thread(target=thread_func, args=(code,l))
-        t.start()
-        t.join()
-        img_io = l[0]
-    except Exception as e:
-        print('ERROR:', e)
-        return
+
 
     if img_io:
-        # For debugging only: save the image to file
+        # For debugging only: saving the image to file
         debug_image = Image.open(img_io)
         debug_image.save('output.png', format='PNG')
         img_io.seek(0)  # Reset the stream position for the next read

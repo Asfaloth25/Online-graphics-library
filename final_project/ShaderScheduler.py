@@ -4,6 +4,8 @@ import numpy as np
 import array # Quad buffer initialization
 import io # Formatting the images so that they can be sent to the webpage
 import os # Loading shaders from their folder
+import utils # Useful math functions
+
 
 class Shader:
     def __init__(self, context:moderngl.Context, aspect_ratio:tuple, render_obj_data, vert_shader:str, frag_shader:str, **kwargs):
@@ -156,15 +158,18 @@ class ShaderScheduler:
         if TEST_MODE:
             image.show()
 
+        self._CTX.release()
+
         return image
 
 
 
 
 def load_functions_to_scheduler(scheduler:ShaderScheduler)->dict:
+
     @scheduler.stack(priority=True)
     def BackgroundColor(color:tuple=(255,255,255)):
-        scheduler.draw_background(np.array(color) / 255)
+        scheduler.draw_background(utils.normalize_color(color))
 
     @scheduler.stack(priority=True)
     def CenterCamera(center_pos:tuple=(0,0)):
@@ -182,18 +187,13 @@ def load_functions_to_scheduler(scheduler:ShaderScheduler)->dict:
             GridSize = gridsize,
             LineWidth = linewidth,
             Opacity = opacity, 
-            LineColor = linecolor,
-            AxesLineColor = axeslinecolor
+            LineColor = utils.normalize_color(linecolor),
+            AxesLineColor = utils.normalize_color(axeslinecolor)
         )
         
     @scheduler.stack()
     def Voronoi(points:list[tuple], opacity:float=0.5, pointradius:float=0.025):
-        MAXVORONOIPOINTS = 1000
-        numpoints = len(points)
-        points_converted = np.array(points)
-        if numpoints < MAXVORONOIPOINTS:
-            padding = np.zeros((MAXVORONOIPOINTS-numpoints, 2), dtype='f4')
-            points_converted = np.vstack([points_converted, padding])
+        points_converted, numpoints = utils.normalize_points(points)
         scheduler.SHADERS['voronoi'].render(
             VoronoiPoints = points_converted,
             Opacity = opacity,
@@ -202,42 +202,33 @@ def load_functions_to_scheduler(scheduler:ShaderScheduler)->dict:
         )
 
     @scheduler.stack()
-    def Points(points:list[tuple], opacity:float=0.5, pointradius:float=0.025, pointcolor:tuple=(0,0,0)):
-        MAXPOINTS = 1000
-        numpoints = len(points)
-        points_converted = np.array(points)
-        if numpoints < MAXPOINTS:
-            padding = np.zeros((MAXPOINTS-numpoints, 2), dtype='f4')
-            points_converted = np.vstack([points_converted, padding])
+    def Points(points:list[tuple], opacity:float=1, pointradius:float=0.025, pointcolor:tuple=(0,0,0)):
+        points_converted, numpoints = utils.normalize_points(points)
         scheduler.SHADERS['points'].render(
             Points = points_converted,
             Opacity = opacity,
             PointRadius = pointradius,
             NumPoints = numpoints,
-            PointColor = pointcolor
+            PointColor = utils.normalize_color(pointcolor)
         )
 
     @scheduler.stack()
-    def Line(points, opacity:float=0.9, linewidth:float=0.025, linecolor:tuple=(0,0,0)):
-
+    def Line(points, opacity:float=1, linewidth:float=0.025, linecolor:tuple=(0,0,0)):
         scheduler.SHADERS['line'].render(
             PointA = points[0],
             PointB = points[1],
-            LineColor = linecolor,
+            LineColor = utils.normalize_color(linecolor),
             LineWidth = linewidth,
             Opacity = opacity,
             IsSegment = 0
         )
 
-
-
     @scheduler.stack()
     def Segment(points, opacity:float=0.9, linewidth:float=0.025, linecolor:tuple=(0,0,0)):
-        
         scheduler.SHADERS['line'].render(
             PointA = points[0],
             PointB = points[1],
-            LineColor = linecolor,
+            LineColor = utils.normalize_color(linecolor),
             LineWidth = linewidth,
             Opacity = opacity,
             IsSegment = 1
@@ -245,14 +236,31 @@ def load_functions_to_scheduler(scheduler:ShaderScheduler)->dict:
 
 
     @scheduler.stack()
-    def Polygon(points, opacity:float=0.9, linewidth:float=0.025, linecolor:tuple=(0,0,0)):
-        for i, vert in enumerate(points):
-            Segment(
-                (points[i-1], vert),
-                opacity=opacity,
-                linewidth=linewidth,
-                linecolor=linecolor
-            )
+    def Polygon(points, opacity:float=0.9, color:tuple=(0,0,0)):
+        points_converted, numpoints = utils.normalize_points(points)
+        scheduler.SHADERS['polygon'].render(
+            Vertices = points_converted,
+            NumVertices = numpoints,
+            InfillColor = utils.normalize_color(color),
+            Opacity = opacity
+        )
+
+    @scheduler.stack()
+    def Mandelbrot(opacity:float=0.7, mandelbrotsteps:int=1000, color:tuple=(255,255,255)):
+        scheduler.SHADERS['mandelbrot'].render(
+            Opacity = opacity,
+            MandelbrotSetColor = utils.normalize_color(color),
+            MandelbrotSteps = mandelbrotsteps
+        )
+
+    @scheduler.stack()
+    def QuickHull(points:list[tuple], opacity:float=1, linecolor=(0,0,0)):
+        pass
+
+    @scheduler.stack()
+    def Delaunay():
+        pass
+
 
     return {
         'Voronoi': Voronoi,
@@ -263,7 +271,12 @@ def load_functions_to_scheduler(scheduler:ShaderScheduler)->dict:
         'Line': Line,
         'Segment': Segment,
         'Polygon': Polygon,
-        'Points': Points
+        'Points': Points,
+        'Mandelbrot': Mandelbrot,
+        'SignedArea': utils.signed_area,
+        'LineIntersection': utils.line_intersection,
+        'PolygonCutSemiplane': utils.polygon_cut_semiplane,
+        'PolygonKernel': utils.polygon_kernel,
     }
 
 
