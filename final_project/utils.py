@@ -83,8 +83,7 @@ def polygon_cut_semiplane(P:Iterable,s:tuple[tuple]) -> list:
 
 
 
-
-def polygon_kernel(P:list):
+def polygon_kernel(P:Iterable):
     if len(P) <= 1:
         return P
     
@@ -93,3 +92,48 @@ def polygon_kernel(P:list):
     for i, vert in enumerate(P):
         N = polygon_cut_semiplane(N, (P[i-1], vert))
     return N
+
+def is_inside_polygon(P:Iterable, point:tuple):
+    below:bool
+    last_below = P[0][1] < point[1]
+    intersection_count = 0
+
+    for i in range(len(P)-1):
+        below = P[i][1] < point[1]
+        if below + last_below == 1: # XOR(below, last_below)
+            intersection_count +=  (signed_area(P[i], point, P[i-1]) * (-1)**below > 0)
+        last_below = below
+
+    # El último segmento (del último vértice al primero)
+    below = P[0][1] < point[1]
+    if below + last_below == 1: # XOR(below, last_below)
+        intersection_count +=  (signed_area(P[i], point, P[i-1]) * (-1)**below > 0)
+
+    return intersection_count % 2
+
+
+
+
+
+
+
+
+
+def qh(a, b, S):
+    if not S: # S es vacío
+        return S
+    
+    KEY = lambda point: signed_area(a, b, point)
+    c = max(S, key=KEY)
+    S_new = [p for p in S if p not in (a,b)]
+    
+    return qh(c, b, [p for p in S_new if signed_area(c, b, p)>0]) + [c] + qh(a, c, [p for p in S_new if signed_area(a,c,p)>0])
+    
+def quickhull(P:Iterable):
+    
+    A, B = min(P), max(P) # Extremos de la nube de puntos
+    KEY = lambda point: signed_area(A, B, point)
+    left, right = [], []
+    [(left, right)[KEY(point) < 0].append(point) for point in P if point not in (A,B)]
+
+    return [B] + qh(A, B, left) + [A] + qh(B, A, right)

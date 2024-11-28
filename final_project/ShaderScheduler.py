@@ -253,9 +253,6 @@ def load_functions_to_scheduler(scheduler:ShaderScheduler)->dict:
             MandelbrotSteps = mandelbrotsteps
         )
 
-    @scheduler.stack()
-    def QuickHull(points:list[tuple], opacity:float=1, linecolor=(0,0,0)):
-        pass
 
     @scheduler.stack()
     def Delaunay():
@@ -276,7 +273,8 @@ def load_functions_to_scheduler(scheduler:ShaderScheduler)->dict:
         'SignedArea': utils.signed_area,
         'LineIntersection': utils.line_intersection,
         'PolygonCutSemiplane': utils.polygon_cut_semiplane,
-        'PolygonKernel': utils.polygon_kernel,
+        'Kernel': utils.polygon_kernel,
+        'ConvexHull': utils.quickhull
     }
 
 
