@@ -1,5 +1,4 @@
 import numpy as np
-import math
 import copy
 from typing import Iterable
 
@@ -18,6 +17,9 @@ def normalize_points(points:Iterable):
 machine_epsilon = 1e-10
 
 def signed_area(A,B,C):
+    '''
+    Devuelve el área signada del triángulo ABC
+    '''
     return((B[0]-A[0])*(C[1]-A[1])-(B[1]-A[1])*(C[0]-A[0]))/2
 
 def convert_line_notation(A,B):
@@ -28,7 +30,10 @@ def convert_line_notation(A,B):
     c = A[1]-m*(A[0])
     return (m, c)
 
-def line_intersection(r:Iterable[tuple],s:Iterable[tuple]):
+def line_intersection(r:Iterable[tuple],s:Iterable[tuple])->tuple|None:
+    '''
+    Devuelve el punto de intersección entre dos rectas, cada una de ellas definida por dos de sus puntos.
+    '''
     if r[0][0] == r[1][0]:
         if s[0][0] == s[1][0]:
             raise ValueError(f'Both lines {r} and {s} are vertical')
@@ -83,7 +88,10 @@ def polygon_cut_semiplane(P:Iterable,s:tuple[tuple]) -> list:
 
 
 
-def polygon_kernel(P:Iterable):
+def polygon_kernel(P:Iterable)->list:
+    '''
+    Devuelve el núcleo del polígono `P, siempre que este exista. Si no, devuelve una lista vacía.
+    '''
     if len(P) <= 1:
         return P
     
@@ -93,7 +101,10 @@ def polygon_kernel(P:Iterable):
         N = polygon_cut_semiplane(N, (P[i-1], vert))
     return N
 
-def is_inside_polygon(P:Iterable, point:tuple):
+def is_inside_polygon(P:Iterable, point:tuple)->bool:
+    '''
+    Devuelve True si el punto `point` está dentro del polígono `P`
+    '''
     below:bool
     last_below = P[0][1] < point[1]
     intersection_count = 0
@@ -120,20 +131,23 @@ def is_inside_polygon(P:Iterable, point:tuple):
 
 
 def qh(a, b, S):
-    if not S: # S es vacío
+    if not S:
         return S
     
-    KEY = lambda point: signed_area(a, b, point)
-    c = max(S, key=KEY)
+    c = max(S, key=lambda point: signed_area(a, b, point))
     S_new = [p for p in S if p not in (a,b)]
     
     return qh(c, b, [p for p in S_new if signed_area(c, b, p)>0]) + [c] + qh(a, c, [p for p in S_new if signed_area(a,c,p)>0])
     
-def quickhull(P:Iterable):
-    
-    A, B = min(P), max(P) # Extremos de la nube de puntos
-    KEY = lambda point: signed_area(A, B, point)
+def quickhull(S:Iterable):
+    '''
+    Calcula el cierre convexo de una nube de puntos mediante el algoritmo Quickhull.
+    '''
+    A, B = min(S), max(S)
     left, right = [], []
-    [(left, right)[KEY(point) < 0].append(point) for point in P if point not in (A,B)]
+    [(left, right)[(lambda point: signed_area(A, B, point))(point) < 0].append(point) for point in S if point not in (A,B)]
 
     return [B] + qh(A, B, left) + [A] + qh(B, A, right)
+
+def delaunay(P:Iterable):
+    pass

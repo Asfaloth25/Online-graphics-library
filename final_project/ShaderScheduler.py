@@ -192,7 +192,7 @@ def load_functions_to_scheduler(scheduler:ShaderScheduler)->dict:
         )
         
     @scheduler.stack()
-    def Voronoi(points:list[tuple], opacity:float=0.5, pointradius:float=0.025):
+    def Voronoi(points:list[tuple], opacity:float=0.8, pointradius:float=0.025):
         points_converted, numpoints = utils.normalize_points(points)
         scheduler.SHADERS['voronoi'].render(
             VoronoiPoints = points_converted,
@@ -202,33 +202,37 @@ def load_functions_to_scheduler(scheduler:ShaderScheduler)->dict:
         )
 
     @scheduler.stack()
-    def Points(points:list[tuple], opacity:float=1, pointradius:float=0.025, pointcolor:tuple=(0,0,0)):
+    def Points(points:list[tuple], opacity:float=1, pointradius:float=0.025, color:tuple=(0,0,0)):
         points_converted, numpoints = utils.normalize_points(points)
         scheduler.SHADERS['points'].render(
             Points = points_converted,
             Opacity = opacity,
             PointRadius = pointradius,
             NumPoints = numpoints,
-            PointColor = utils.normalize_color(pointcolor)
+            PointColor = utils.normalize_color(color)
         )
 
     @scheduler.stack()
-    def Line(points, opacity:float=1, linewidth:float=0.025, linecolor:tuple=(0,0,0)):
+    def Point(point:tuple, opacity:float=1, pointradius:float=0.025, color:tuple=(0,0,0)):
+        return Points([point], opacity, pointradius, color)
+
+    @scheduler.stack()
+    def Line(points, opacity:float=1, linewidth:float=0.025, color:tuple=(0,0,0)):
         scheduler.SHADERS['line'].render(
             PointA = points[0],
             PointB = points[1],
-            LineColor = utils.normalize_color(linecolor),
+            LineColor = utils.normalize_color(color),
             LineWidth = linewidth,
             Opacity = opacity,
             IsSegment = 0
         )
 
     @scheduler.stack()
-    def Segment(points, opacity:float=0.9, linewidth:float=0.025, linecolor:tuple=(0,0,0)):
+    def Segment(points, opacity:float=0.9, linewidth:float=0.025, color:tuple=(0,0,0)):
         scheduler.SHADERS['line'].render(
             PointA = points[0],
             PointB = points[1],
-            LineColor = utils.normalize_color(linecolor),
+            LineColor = utils.normalize_color(color),
             LineWidth = linewidth,
             Opacity = opacity,
             IsSegment = 1
@@ -253,12 +257,6 @@ def load_functions_to_scheduler(scheduler:ShaderScheduler)->dict:
             MandelbrotSteps = mandelbrotsteps
         )
 
-
-    @scheduler.stack()
-    def Delaunay():
-        pass
-
-
     return {
         'Voronoi': Voronoi,
         'Grid': Grid,
@@ -269,6 +267,7 @@ def load_functions_to_scheduler(scheduler:ShaderScheduler)->dict:
         'Segment': Segment,
         'Polygon': Polygon,
         'Points': Points,
+        'Point': Point,
         'Mandelbrot': Mandelbrot,
         'SignedArea': utils.signed_area,
         'LineIntersection': utils.line_intersection,

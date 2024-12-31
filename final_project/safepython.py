@@ -15,6 +15,7 @@ SAFE_FUNCTIONS = {
     'np': numpy,
     'math': math,
     'time': time,
+    'enumerate': enumerate, # This one is not passed as a default function
     '_getiter_': default_guarded_getiter, # These two enable the usage of for loops
     '_iter_unpack_sequence_': guarded_iter_unpack_sequence,
     '_getitem_': default_guarded_getitem
@@ -36,7 +37,9 @@ def run_restricted(user_code:str, TEST_MODE:bool=False):
     exec(byte_code, safe_env)
     print("Code executed successfully.")
 
-    print(scheduler._STACK)
+    if TEST_MODE: 
+        print(scheduler._STACK)
+
     return scheduler.render_image(TEST_MODE=TEST_MODE)
 
 
